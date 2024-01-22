@@ -1,11 +1,17 @@
+import { isArray, isEmpty } from "lodash";
 import { create } from "zustand";
-import { BUTTON_TYPES } from "../constants";
 
 const useCalculation = create((set) => ({
   calculationItems: [],
-  setCalculationItems: (items = []) => set(() => ({ calculationItems: items })),
-  addCalculationItem: (item) =>
-    set((state) => ({ calculationItems: [...state.calculationItems, item] })),
+  setCalculationItems: (calculationItems = []) =>
+    set(() => ({ calculationItems })),
+  addCalculationItem: (calculationItem) => {
+    if (isEmpty(calculationItem) || isArray(calculationItem)) return;
+
+    set((state) => ({
+      calculationItems: [...state.calculationItems, calculationItem],
+    }));
+  },
 }));
 
 export default useCalculation;

@@ -1,7 +1,7 @@
 import classNames from "classnames";
 
 const ActionButton = (props) => {
-  const { text, className, handleOnClick: _handleOnClick, type } = props;
+  const { calculationItem, className, handleOnClick: _handleOnClick } = props;
 
   const itemClassName = classNames(
     "w-1/4 h-9 text-white flex items-center justify-center cursor-pointer rounded-md select-none font-medium",
@@ -9,15 +9,12 @@ const ActionButton = (props) => {
   );
 
   const handleOnClick = () => {
-    _handleOnClick({
-      text,
-      type,
-    });
+    _handleOnClick(calculationItem);
   };
 
   return (
     <div className={itemClassName} onClick={handleOnClick}>
-      {text}
+      {calculationItem.text}
     </div>
   );
 };

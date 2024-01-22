@@ -1,96 +1,46 @@
-import _ from "lodash";
+import { CALCULATION_ITEM_TYPES } from "../../constants";
 
-const testVal = [
-  {
-    value: "789",
-    type: "NUMBER",
-  },
-  {
-    type: "BRACKETS",
-    properties: {
-      isOpen: true,
-      children: [
-        {
-          value: "789",
-          type: "NUMBER",
-        },
-        {
-          value: "+",
-          type: "ADDITION",
-        },
-        {
-          type: "BRACKETS",
-          properties: {
-            isOpen: true,
-            children: [
-              {
-                value: "789",
-                type: "NUMBER",
-              },
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {
-    type: "BRACKETS",
-    properties: {
-      isOpen: true,
-      children: [
-        {
-          value: "789",
-          type: "NUMBER",
-        },
-        {
-          value: "+",
-          type: "ADDITION",
-        },
-        {
-          type: "BRACKETS",
-          properties: {
-            isOpen: true,
-            children: [
-              {
-                value: "789",
-                type: "NUMBER",
-              },
-            ],
-          },
-        },
-      ],
-    },
-  },
-];
+const generateBracketsParentPropertiesChildrenPath = (bracketsItemIndex) =>
+  `properties.children[${bracketsItemIndex}]`;
+const generateBracketsCurrentPath = (bracketsItemIndex) =>
+  `[${bracketsItemIndex}]`;
 
-const findCurrentPath = (payload) => {
-  const { calculationItems, isInnerBracket = false, res } = payload;
+const findScopeBracketsPath = (payload) => {
+  const {
+    calculationItems,
+    isInnerParentBracket = false,
+    bracketsItemPathItems,
+  } = payload;
 
-  const bracketItemIndex = calculationItems.findIndex(
-    (item) => item.type === "BRACKETS" && item.properties.isOpen === true
+  const bracketsItemIndex = calculationItems.findIndex(
+    (item) =>
+      item.type === CALCULATION_ITEM_TYPES.BRACKETS &&
+      item.properties.isOpen === true
   );
-  if (bracketItemIndex === -1) return;
+  if (bracketsItemIndex === -1) return;
 
-  const bracketItem = calculationItems[bracketItemIndex];
+  const bracketsItem = calculationItems[bracketsItemIndex];
 
-  if (isInnerBracket) {
-    res.push(`properties.children[${bracketItemIndex}]`);
+  if (isInnerParentBracket) {
+    bracketsItemPathItems.push(
+      generateBracketsParentPropertiesChildrenPath(bracketsItemIndex)
+    );
   } else {
-    res.push(`[${bracketItemIndex}]`);
+    bracketsItemPathItems.push(generateBracketsCurrentPath(bracketsItemIndex));
   }
 
-  findCurrentPath({
-    calculationItems: bracketItem.properties.children,
-    isInnerBracket: true,
-    res,
+  findScopeBracketsPath({
+    calculationItems: bracketsItem.properties.children,
+    isInnerParentBracket: true,
+    bracketsItemPathItems,
   });
 };
 
 export const findBracketsPath = (calculationItems) => {
-  const res = [];
-  findCurrentPath({ calculationItems, res });
+  const bracketsItemPathItems = [];
+  findScopeBracketsPath({ calculationItems, bracketsItemPathItems });
 
-  if (res.length === 0) return null;
-
-  return res.join(".");
+  return bracketsItemPathItems.length === 0
+    ? null
+    : bracketsItemPathItems.join(".");
 };
