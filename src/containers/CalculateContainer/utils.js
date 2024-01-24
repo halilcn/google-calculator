@@ -10,13 +10,17 @@ const findScopeBracketsPath = (payload) => {
     calculationItems,
     isInnerParentBracket = false,
     bracketsItemPathItems,
+    onlyOpenedBrackets = true,
   } = payload;
 
-  const bracketsItemIndex = calculationItems.findIndex(
-    (item) =>
-      item.type === CALCULATION_ITEM_TYPES.BRACKETS &&
-      item.properties.isOpen === true
-  );
+  const bracketsItemIndex = calculationItems.findIndex((item) => {
+    const isBrackets = item.type === CALCULATION_ITEM_TYPES.BRACKETS;
+    const isValidForOpenStatus = onlyOpenedBrackets
+      ? item?.properties?.isOpen === true
+      : true;
+
+    return isBrackets && isValidForOpenStatus;
+  });
   if (bracketsItemIndex === -1) return;
 
   const bracketsItem = calculationItems[bracketsItemIndex];
@@ -33,12 +37,19 @@ const findScopeBracketsPath = (payload) => {
     calculationItems: bracketsItem.properties.children,
     isInnerParentBracket: true,
     bracketsItemPathItems,
+    onlyOpenedBrackets,
   });
 };
 
-export const findBracketsPath = (calculationItems) => {
+export const findBracketsPath = (calculationItems, customConfig = {}) => {
+  const { onlyOpenedBrackets } = customConfig;
+
   const bracketsItemPathItems = [];
-  findScopeBracketsPath({ calculationItems, bracketsItemPathItems });
+  findScopeBracketsPath({
+    calculationItems,
+    bracketsItemPathItems,
+    onlyOpenedBrackets,
+  });
 
   return bracketsItemPathItems.length === 0
     ? null

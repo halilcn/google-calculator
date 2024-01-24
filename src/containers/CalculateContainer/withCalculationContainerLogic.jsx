@@ -1,4 +1,4 @@
-import _ from "lodash";
+import _, { cloneDeep } from "lodash";
 import useCalculation from "../../stores/calculation";
 import { findBracketsPath } from "./utils";
 import {
@@ -16,6 +16,7 @@ const calculateButtonStyle = "bg-blue-400 hover:bg-blue-300 text-black";
 const MAX_ROW_ITEMS_LENGTH = 3;
 
 // TODO: create collection item? her bir type item için?
+// TODO: calculate esnasında error throw etme.(mevcut error'ları refactor etme)
 
 const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   const { addCalculationItem, calculationItems, setCalculationItems } =
@@ -168,8 +169,10 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       case CALCULATION_ITEM_TYPES.NUMBER: {
         const lastCalculationItemValue = lastCalculationItemOnScope.value;
         const hasOnlyOneCharacter = lastCalculationItemValue.length === 1;
+        const isOutcomeItem =
+          lastCalculationItemOnScope?.properties?.isOutcome === true;
 
-        if (hasOnlyOneCharacter) {
+        if (hasOnlyOneCharacter || isOutcomeItem) {
           handleDeleteLastCalculationItemOnScope();
           return;
         }
@@ -190,7 +193,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     }
   };
 
-  const handleOpenBrackets = () => {
+  const handleOpenBracketsButton = () => {
     const newBracketsItem = {
       type: CALCULATION_ITEM_TYPES.BRACKETS,
       properties: {
@@ -202,11 +205,11 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     handleAddNewCalculationItemOnScope(newBracketsItem);
   };
 
-  const validateHandleCloseBrackets = () => {
+  const validateHandleCloseBracketsButton = () => {
     return isInsideInBrackets;
   };
-  const handleCloseBrackets = () => {
-    if (!validateHandleCloseBrackets()) return;
+  const handleCloseBracketsButton = () => {
+    if (!validateHandleCloseBracketsButton()) return;
 
     const updatedBracketsItem = {
       ...currentBracketsItem,
@@ -237,6 +240,106 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     handleAddNewCalculationItemOnScope(newCalculationItem);
   };
 
+  const calculateNumbersByCalculationType = (numbers, calculationItemType) => {
+    const [firstNumber, secondNumber] = numbers;
+
+    switch (calculationItemType) {
+      case CALCULATION_ITEM_TYPES.ADDITION:
+        return firstNumber + secondNumber;
+      case CALCULATION_ITEM_TYPES.REMOVE:
+        return firstNumber - secondNumber;
+      case CALCULATION_ITEM_TYPES.MULTIPLICATION:
+        return firstNumber * secondNumber;
+      case CALCULATION_ITEM_TYPES.DIVISION:
+        return firstNumber / secondNumber;
+    }
+
+    throw new Error("There is no matched type");
+  };
+  const checkIsCalculationItemPriorityType = ({ type }) =>
+    type === CALCULATION_ITEM_TYPES.MULTIPLICATION ||
+    type === CALCULATION_ITEM_TYPES.DIVISION;
+  const checkIsCalculationItemNotPriorityType = ({ type }) =>
+    type === CALCULATION_ITEM_TYPES.ADDITION ||
+    type === CALCULATION_ITEM_TYPES.REMOVE;
+  const handleReduceCalculationItems = (checkItemTypePriorityFn) => {
+    let shouldSkipNextItem = false;
+
+    return [
+      (acc, item, currentIndex, currentCalculationItems) => {
+        if (shouldSkipNextItem) {
+          shouldSkipNextItem = false;
+          return [...acc];
+        }
+        if (!checkItemTypePriorityFn(item)) return [...acc, item];
+
+        shouldSkipNextItem = true;
+
+        const firstNumber = Number(acc[acc.length - 1].value);
+        const secondNumber = Number(
+          currentCalculationItems[currentIndex + 1].value
+        );
+
+        const calculatedValue = calculateNumbersByCalculationType(
+          [firstNumber, secondNumber],
+          item.type
+        );
+
+        return [
+          ...acc.slice(0, acc.length - 1),
+          {
+            type: CALCULATION_ITEM_TYPES.NUMBER,
+            value: String(calculatedValue),
+          },
+        ];
+      },
+      [],
+    ];
+  };
+  const calculateCalculationItems = (_calculateItems) => {
+    const _calculatedCalculationItems = _calculateItems
+      .reduce(
+        ...handleReduceCalculationItems(checkIsCalculationItemPriorityType)
+      )
+      .reduce(
+        ...handleReduceCalculationItems(checkIsCalculationItemNotPriorityType)
+      );
+
+    if (_calculatedCalculationItems.length !== 1) throw new Error("Error");
+
+    return _calculatedCalculationItems[0];
+  };
+
+  const validateHandleCalculateButton = () => {
+    return calculationItems.length > 2; // it should have 2 numbers and 1 action at least
+  };
+  const handleCalculateButton = () => {
+    if (!validateHandleCalculateButton()) return;
+
+    const _clonedCalculationItems = cloneDeep(calculationItems);
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const deepBracketsPath = findBracketsPath(_clonedCalculationItems, {
+        onlyOpenedBrackets: false,
+      });
+      if (deepBracketsPath === null) break;
+
+      const _bracketsItem = _.get(_clonedCalculationItems, deepBracketsPath);
+      const calculatedItem = calculateCalculationItems(
+        _bracketsItem.properties.children
+      );
+
+      _.set(_clonedCalculationItems, deepBracketsPath, calculatedItem);
+    }
+
+    const calculatedCalculationItem = calculateCalculationItems(
+      _clonedCalculationItems
+    );
+    setCalculationItems([
+      { ...calculatedCalculationItem, properties: { isOutcome: true } },
+    ]);
+  };
+
   const handleActionButtonClick = (item) => {
     const { type, text, customActionType = "" } = item;
 
@@ -251,10 +354,13 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         handleClickCEButton();
         return;
       case CALCULATION_ITEM_CUSTOM_ACTIONS.OPEN_BRACKETS:
-        handleOpenBrackets();
+        handleOpenBracketsButton();
         return;
       case CALCULATION_ITEM_CUSTOM_ACTIONS.CLOSE_BRACKETS:
-        handleCloseBrackets();
+        handleCloseBracketsButton();
+        return;
+      case CALCULATION_ITEM_CUSTOM_ACTIONS.CALCULATE:
+        handleCalculateButton();
         return;
       default:
         handleOtherActionsButton({ type, text });
@@ -359,6 +465,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       {
         text: CALCULATION_ITEM_TEXTS.CALCULATE,
         type: CALCULATION_ITEM_TYPES.CALCULATE,
+        customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.CALCULATE,
         className: calculateButtonStyle,
       },
       {
