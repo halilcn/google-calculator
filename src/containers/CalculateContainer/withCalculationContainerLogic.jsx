@@ -8,6 +8,7 @@ import {
 } from "../../constants";
 import classNames from "classnames";
 import ActionButton from "./ActionButton";
+import useTriggerProcess from "../../hooks/useTriggerProcess";
 
 const outButtonStyle = "bg-zinc-500 hover:bg-zinc-400";
 const innerButtonStyle = "bg-zinc-700 hover:bg-zinc-600";
@@ -125,6 +126,9 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       ...calculationItems.slice(0, calculationItems.length - 1),
       updatedCalculationItem,
     ]);
+  };
+  const handleDeleteAllCalculationItems = () => {
+    setCalculationItems([]);
   };
 
   const validateHandleClickNumberButton = (numberText) => {
@@ -367,6 +371,18 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     }
   };
 
+  const {
+    triggerProcess: triggerDeleteAllCalculationItems,
+    abortProcess: abortDeleteAllCalculationItems,
+  } = useTriggerProcess(handleDeleteAllCalculationItems, 800);
+
+  const handleCEButtonOnMouseDown = () => {
+    triggerDeleteAllCalculationItems();
+  };
+  const handleCEButtonOnMouseUp = () => {
+    abortDeleteAllCalculationItems();
+  };
+
   const allCalculationItems = [
     [
       ...[
@@ -393,6 +409,10 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         type: CALCULATION_ITEM_TYPES.CE,
         customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.CE,
         className: outButtonStyle,
+        actionButtonProps: {
+          onMouseDown: handleCEButtonOnMouseDown,
+          onMouseUp: handleCEButtonOnMouseUp,
+        },
       },
     ],
     [
