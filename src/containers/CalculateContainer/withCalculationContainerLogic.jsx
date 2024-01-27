@@ -71,7 +71,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   });
 
   const updateBracketsItem = (newBracketsItem) => {
-    const _calculationItems = JSON.parse(JSON.stringify(calculationItems));
+    const _calculationItems = cloneDeep(calculationItems);
     _.set(_calculationItems, currentBracketsItemPath, newBracketsItem);
     setCalculationItems(_calculationItems);
   };
@@ -85,26 +85,29 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
 
     addCalculationItem(item);
   };
-  // TODO: refactor
   const handleDeleteLastCalculationItemOnScope = () => {
     if (isInsideInBrackets) {
       const hasChildrenItems =
         currentBracketsItem.properties.children.length !== 0;
 
-      if (!hasChildrenItems) {
-        const test = [...calculationItems];
-        _.unset(test, currentBracketsItemPath);
-
-        // TODO: it is not good way to solve
-        setCalculationItems(
-          JSON.parse(JSON.stringify(test).replace(",null", ""))
-        );
+      if (hasChildrenItems) {
+        const newBracketsCalculationItem =
+          getBracketsItemAfterDeletingLastItem();
+        updateBracketsItem(newBracketsCalculationItem);
 
         return;
       }
 
-      const newBracketsCalculationItem = getBracketsItemAfterDeletingLastItem();
-      updateBracketsItem(hasChildrenItems ? newBracketsCalculationItem : null);
+      const _clonedCalculationItems = cloneDeep(calculationItems);
+      _.unset(_clonedCalculationItems, currentBracketsItemPath);
+
+      // unset method sets null to deleted brackets items after deleting it
+      // We should delete this null. I couldn't find else way to resolve this issue
+      // TODO: it is not good way to fix this issue, we should find better way.
+      setCalculationItems(
+        JSON.parse(JSON.stringify(_clonedCalculationItems).replace(",null", ""))
+      );
+
       return;
     }
 
