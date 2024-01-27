@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 const useCalculation = create((set) => ({
   calculationItems: [],
+  hasError: true,
   setCalculationItems: (calculationItems = []) =>
     set(() => ({ calculationItems })),
   addCalculationItem: (calculationItem) => {
@@ -12,6 +13,7 @@ const useCalculation = create((set) => ({
       calculationItems: [...state.calculationItems, calculationItem],
     }));
   },
+  setHasError: (payload) => set(() => ({ hasError: payload })),
 }));
 
 export default useCalculation;

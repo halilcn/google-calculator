@@ -10,7 +10,7 @@ const calculationItemsPlaceHolder = {
 };
 
 const withIndicatorTextLogic = (ContainerComponent) => (props) => {
-  const { calculationItems } = useCalculation();
+  const { calculationItems, hasError } = useCalculation();
 
   const hasCalculationItems = calculationItems.length > 0;
 
@@ -37,10 +37,13 @@ const withIndicatorTextLogic = (ContainerComponent) => (props) => {
     .map(mapCalculationItem)
     .join(" ");
 
+  const indicatorText = hasError ? "Error" : calculationItemsText;
+
   return (
     <ContainerComponent
       {...props}
-      calculationItemsText={calculationItemsText}
+      indicatorText={indicatorText}
+      hasError={hasError}
     />
   );
 };

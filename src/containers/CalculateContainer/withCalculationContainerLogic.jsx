@@ -17,11 +17,18 @@ const calculateButtonStyle = "bg-blue-400 hover:bg-blue-300 text-black";
 const MAX_ROW_ITEMS_LENGTH = 3;
 
 // TODO: create collection item? her bir type item için?
-// TODO: calculate esnasında error throw etme.(mevcut error'ları refactor etme)
+// TODO: 5(5) işleminin yapılması.
+// TODO: 6x işleminin error dönmemesi
+// TODO: past işlem seçince, error text'in gitmesi.
 
 const withCalculationContainerLogic = (ContainerComponent) => (props) => {
-  const { addCalculationItem, calculationItems, setCalculationItems } =
-    useCalculation();
+  const {
+    addCalculationItem,
+    calculationItems,
+    setCalculationItems,
+    hasError,
+    setHasError,
+  } = useCalculation();
 
   const currentBracketsItemPath = findBracketsPath(calculationItems);
   const isInsideInBrackets = currentBracketsItemPath !== null;
@@ -360,38 +367,42 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     return _calculatedCalculationItems[0];
   };
 
-  const validateHandleCalculateButton = () => {
-    return calculationItems.length > 2; // it should have 2 numbers and 1 action at least
-  };
   const handleCalculateButton = () => {
-    if (!validateHandleCalculateButton()) return;
+    try {
+      const _clonedCalculationItems = cloneDeep(calculationItems);
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const deepBracketsPath = findBracketsPath(_clonedCalculationItems, {
+          onlyOpenedBrackets: false,
+        });
+        if (deepBracketsPath === null) break;
 
-    const _clonedCalculationItems = cloneDeep(calculationItems);
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const deepBracketsPath = findBracketsPath(_clonedCalculationItems, {
-        onlyOpenedBrackets: false,
-      });
-      if (deepBracketsPath === null) break;
+        const _bracketsItem = _.get(_clonedCalculationItems, deepBracketsPath);
+        const calculatedItem = calculateCalculationItems(
+          _bracketsItem.properties.children
+        );
 
-      const _bracketsItem = _.get(_clonedCalculationItems, deepBracketsPath);
-      const calculatedItem = calculateCalculationItems(
-        _bracketsItem.properties.children
+        _.set(_clonedCalculationItems, deepBracketsPath, calculatedItem);
+      }
+
+      const calculatedCalculationItem = calculateCalculationItems(
+        _clonedCalculationItems
       );
-
-      _.set(_clonedCalculationItems, deepBracketsPath, calculatedItem);
+      setCalculationItems([
+        { ...calculatedCalculationItem, properties: { isOutcome: true } },
+      ]);
+    } catch (err) {
+      setCalculationItems([]);
+      setHasError(true);
     }
-
-    const calculatedCalculationItem = calculateCalculationItems(
-      _clonedCalculationItems
-    );
-    setCalculationItems([
-      { ...calculatedCalculationItem, properties: { isOutcome: true } },
-    ]);
   };
 
   const handleActionButtonClick = (item) => {
     const { type, text, customActionType = "" } = item;
+
+    if (hasError && calculationItems.length === 0) {
+      setHasError(false);
+    }
 
     switch (customActionType) {
       case CALCULATION_ITEM_CUSTOM_ACTIONS.NUMBER:
