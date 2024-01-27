@@ -5,7 +5,10 @@ const IndicatorText = withIndicatorTextLogic((props) => {
 
   return (
     <div className="text-white flex justify-end cursor-default">
-      <div className="font-bold text-xl">{calculationItemsText}</div>
+      <div
+        className="font-bold text-xl"
+        dangerouslySetInnerHTML={{ __html: calculationItemsText }}
+      />
     </div>
   );
 });
