@@ -213,7 +213,13 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   };
 
   const validateHandleCloseBracketsButton = () => {
-    return isInsideInBrackets;
+    const lastCalculationItemType = lastCalculationItemOnScope?.type;
+
+    const isValidType =
+      lastCalculationItemType == CALCULATION_ITEM_TYPES.NUMBER ||
+      lastCalculationItemType === CALCULATION_ITEM_TYPES.BRACKETS;
+
+    return isInsideInBrackets && isValidType;
   };
   const handleCloseBracketsButton = () => {
     if (!validateHandleCloseBracketsButton()) return;
