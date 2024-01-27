@@ -57,7 +57,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       ],
     },
   });
-  const getBracketsItemAfterDeletingLastItem = () => ({
+  const getNewBracketsItemAfterDeletingLastItem = () => ({
     ...currentBracketsItem,
     properties: {
       ...currentBracketsItem.properties,
@@ -92,7 +92,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
 
       if (hasChildrenItems) {
         const newBracketsCalculationItem =
-          getBracketsItemAfterDeletingLastItem();
+          getNewBracketsItemAfterDeletingLastItem();
         updateBracketsItem(newBracketsCalculationItem);
 
         return;
@@ -104,8 +104,11 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       // unset method sets null to deleted brackets items after deleting it
       // We should delete this null. I couldn't find else way to resolve this issue
       // TODO: it is not good way to fix this issue, we should find better way.
+      const replaceText = calculationItems.length === 1 ? "null" : ",null";
       setCalculationItems(
-        JSON.parse(JSON.stringify(_clonedCalculationItems).replace(",null", ""))
+        JSON.parse(
+          JSON.stringify(_clonedCalculationItems).replace(replaceText, "")
+        )
       );
 
       return;
@@ -116,7 +119,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     ];
     setCalculationItems(newCalculationItems);
   };
-  const handleUpdateLastCalculationItem = (updatedCalculationItem) => {
+  const handleUpdateLastCalculationItemOnScope = (updatedCalculationItem) => {
     if (isInsideInBrackets) {
       const newBracketsItem = getNewBracketsItemForUpdatingLastCalculationItem(
         updatedCalculationItem
@@ -155,7 +158,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         ...lastCalculationItemOnScope,
         value: `${lastCalculationItemOnScope.value}${text}`,
       };
-      handleUpdateLastCalculationItem(newCalculationItem);
+      handleUpdateLastCalculationItemOnScope(newCalculationItem);
 
       return;
     }
@@ -172,7 +175,9 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   const handleClickCEButton = () => {
     if (!validateHandleClickCEButton()) return;
 
-    switch (lastCalculationItemOnScope?.type) {
+    const lastCalculationItemType = lastCalculationItemOnScope?.type;
+
+    switch (lastCalculationItemType) {
       case CALCULATION_ITEM_TYPES.NUMBER: {
         const lastCalculationItemValue = lastCalculationItemOnScope.value;
         const hasOnlyOneCharacter = lastCalculationItemValue.length === 1;
@@ -191,12 +196,44 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
             lastCalculationItemValue.length - 1
           ),
         };
-        handleUpdateLastCalculationItem(updatedCalculationItem);
+        handleUpdateLastCalculationItemOnScope(updatedCalculationItem);
 
         return;
       }
-      default:
-        handleDeleteLastCalculationItemOnScope();
+      default: {
+        const isBracketsType =
+          lastCalculationItemType === CALCULATION_ITEM_TYPES.BRACKETS;
+
+        switch (true) {
+          case isBracketsType && !isInsideInBrackets: {
+            const updatedLastBracketsItem = {
+              ...lastCalculationItemOnScope,
+              properties: {
+                ...lastCalculationItemOnScope.properties,
+                isOpen: true,
+              },
+            };
+            handleUpdateLastCalculationItemOnScope(updatedLastBracketsItem);
+
+            return;
+          }
+          case isInsideInBrackets &&
+            isBracketsType &&
+            lastCalculationItemOnScope.properties.isOpen === false: {
+            handleUpdateLastCalculationItemOnScope({
+              ...lastCalculationItemOnScope,
+              properties: {
+                ...lastCalculationItemOnScope.properties,
+                isOpen: true,
+              },
+            });
+
+            return;
+          }
+          default:
+            handleDeleteLastCalculationItemOnScope();
+        }
+      }
     }
   };
 
