@@ -28,6 +28,8 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     setCalculationItems,
     hasError,
     setHasError,
+    pastCalculations,
+    addPastCalculation,
   } = useCalculation();
 
   const currentBracketsItemPath = findBracketsPath(calculationItems);
@@ -43,6 +45,22 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     : calculationItems[calculationItems.length - 1];
 
   const hasCalculationItems = calculationItems.length > 0;
+
+  const handleAddPastCalculation = (
+    pastCalculationItems,
+    pastCalculatedCalculationItem
+  ) => {
+    const lastPastCalculationItem =
+      pastCalculations[pastCalculations.length - 1];
+    const alreadyAddedPastCalculationItemsAsLastItem = _.isEqual(
+      lastPastCalculationItem?.calculationItems,
+      pastCalculationItems
+    );
+
+    if (alreadyAddedPastCalculationItemsAsLastItem) return;
+
+    addPastCalculation(pastCalculationItems, pastCalculatedCalculationItem);
+  };
 
   const getNewBracketsItemForAdding = (item) => ({
     ...currentBracketsItem,
@@ -368,8 +386,12 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   };
 
   const handleCalculateButton = () => {
+    let _preparedCalculatedCalculationItem;
+    const _pastCalculationItems = cloneDeep(calculationItems);
+
     try {
       const _clonedCalculationItems = cloneDeep(calculationItems);
+
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const deepBracketsPath = findBracketsPath(_clonedCalculationItems, {
@@ -388,12 +410,19 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       const calculatedCalculationItem = calculateCalculationItems(
         _clonedCalculationItems
       );
-      setCalculationItems([
-        { ...calculatedCalculationItem, properties: { isOutcome: true } },
-      ]);
+      _preparedCalculatedCalculationItem = {
+        ...calculatedCalculationItem,
+        properties: { isOutcome: true },
+      };
+      setCalculationItems([_preparedCalculatedCalculationItem]);
     } catch (err) {
       setCalculationItems([]);
       setHasError(true);
+    } finally {
+      handleAddPastCalculation(
+        _pastCalculationItems,
+        _preparedCalculatedCalculationItem
+      );
     }
   };
 

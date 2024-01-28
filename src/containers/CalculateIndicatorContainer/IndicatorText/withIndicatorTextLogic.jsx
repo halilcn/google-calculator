@@ -3,6 +3,7 @@ import {
   CALCULATION_ITEM_TYPES,
 } from "../../../constants";
 import useCalculation from "../../../stores/calculation";
+import withGenerateCalculationItemsText from "../common/withGenerateCalculationItemsText";
 
 const calculationItemsPlaceHolder = {
   type: CALCULATION_ITEM_TYPES.NUMBER,
@@ -14,36 +15,29 @@ const withIndicatorTextLogic = (ContainerComponent) => (props) => {
 
   const hasCalculationItems = calculationItems.length > 0;
 
-  const mapCalculationItem = (item) => {
-    const isBrackets = item.type === CALCULATION_ITEM_TYPES.BRACKETS;
+  const _calculationItems = hasCalculationItems
+    ? [...calculationItems]
+    : [calculationItemsPlaceHolder];
 
-    return isBrackets ? generateBracketsText(item) : item.value;
-  };
+  const WrappedGenerateCalculationItemsText = withGenerateCalculationItemsText(
+    (props) => {
+      const { calculationItemsText, ...restOfProps } = props;
 
-  const generateCalculationItemsText = (calculationItems) =>
-    calculationItems.map(mapCalculationItem).join(" ");
+      const _calculationItemsText = hasError ? "Error" : calculationItemsText;
 
-  const generateBracketsText = (item) => {
-    const { isOpen, children } = item.properties;
-
-    return `<span>(</span>${generateCalculationItemsText(
-      children
-    )}<span style="color:${isOpen ? "#b3b3b3" : "white"};">)</span>`;
-  };
-
-  const calculationItemsText = (
-    hasCalculationItems ? [...calculationItems] : [calculationItemsPlaceHolder]
-  )
-    .map(mapCalculationItem)
-    .join(" ");
-
-  const indicatorText = hasError ? "Error" : calculationItemsText;
+      return (
+        <ContainerComponent
+          {...restOfProps}
+          calculationItemsText={_calculationItemsText}
+        />
+      );
+    }
+  );
 
   return (
-    <ContainerComponent
+    <WrappedGenerateCalculationItemsText
       {...props}
-      indicatorText={indicatorText}
-      hasError={hasError}
+      calculationItems={_calculationItems}
     />
   );
 };
