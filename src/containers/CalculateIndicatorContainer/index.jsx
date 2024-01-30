@@ -4,7 +4,7 @@ import PastCalculations from "./PastCalculations";
 const CalculateIndicatorContainer = () => {
   return (
     <div>
-      <div className="border p-3 border-zinc-700 rounded-md hover:bg-zinc-700">
+      <div className="border p-3 border-zinc-700 rounded-md">
         <PastCalculations />
         <IndicatorText />
       </div>
