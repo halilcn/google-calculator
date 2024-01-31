@@ -1,4 +1,4 @@
-import _, { cloneDeep } from "lodash";
+import _ from "lodash";
 import useCalculation from "../../stores/calculation";
 import { findBracketsPath } from "./utils";
 import {
@@ -9,6 +9,7 @@ import {
 import classNames from "classnames";
 import ActionButton from "./ActionButton";
 import useTriggerProcess from "../../hooks/useTriggerProcess";
+import { useEffect } from "react";
 
 const outButtonStyle = "bg-zinc-500 hover:bg-zinc-400";
 const innerButtonStyle = "bg-zinc-700 hover:bg-zinc-600";
@@ -19,7 +20,7 @@ const MAX_ROW_ITEMS_LENGTH = 3;
 // TODO: create collection item? her bir type item için?
 // TODO: 5(5) işleminin yapılması.
 // TODO: 6x işleminin error dönmemesi
-// TODO: past işlem seçince, error text'in gitmesi.
+// TODO: 123.123 - 123.123
 
 const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   const {
@@ -30,6 +31,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     setHasError,
     pastCalculations,
     addPastCalculation,
+    isFocusedOnIndicator,
   } = useCalculation();
 
   const currentBracketsItemPath = findBracketsPath(calculationItems);
@@ -96,7 +98,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
   });
 
   const updateBracketsItem = (newBracketsItem) => {
-    const _calculationItems = cloneDeep(calculationItems);
+    const _calculationItems = _.cloneDeep(calculationItems);
     _.set(_calculationItems, currentBracketsItemPath, newBracketsItem);
     setCalculationItems(_calculationItems);
   };
@@ -123,7 +125,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         return;
       }
 
-      const _clonedCalculationItems = cloneDeep(calculationItems);
+      const _clonedCalculationItems = _.cloneDeep(calculationItems);
       _.unset(_clonedCalculationItems, currentBracketsItemPath);
 
       // unset method sets null to deleted brackets items after deleting it
@@ -385,12 +387,17 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     return _calculatedCalculationItems[0];
   };
 
+  const handleCalculateButtonValidate = () => {
+    return calculationItems.length > 0;
+  };
   const handleCalculateButton = () => {
+    if (!handleCalculateButtonValidate()) return;
+
     let _preparedCalculatedCalculationItem;
-    const _pastCalculationItems = cloneDeep(calculationItems);
+    const _pastCalculationItems = _.cloneDeep(calculationItems);
 
     try {
-      const _clonedCalculationItems = cloneDeep(calculationItems);
+      const _clonedCalculationItems = _.cloneDeep(calculationItems);
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -469,16 +476,19 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
     abortDeleteAllCalculationItems();
   };
 
+  // TODO: memoization?
   const allCalculationItems = [
     [
       ...[
         {
           text: CALCULATION_ITEM_TEXTS.OPEN_BRACKETS,
           customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.OPEN_BRACKETS,
+          keyboardKey: "(",
         },
         {
           text: CALCULATION_ITEM_TEXTS.CLOSE_BRACKETS,
           customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.CLOSE_BRACKETS,
+          keyboardKey: ")",
         },
       ].map((calculationItem) => ({
         ...calculationItem,
@@ -489,6 +499,7 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         text: CALCULATION_ITEM_TEXTS.PERCENTAGE,
         type: CALCULATION_ITEM_TYPES.PERCENTAGE,
         className: outButtonStyle,
+        keyboardKey: "%",
       },
       {
         text: CALCULATION_ITEM_TEXTS.CE,
@@ -499,13 +510,14 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
           onMouseDown: handleCEButtonOnMouseDown,
           onMouseUp: handleCEButtonOnMouseUp,
         },
+        keyboardKey: "Backspace",
       },
     ],
     [
       ...[
-        { text: CALCULATION_ITEM_TEXTS.SEVEN },
-        { text: CALCULATION_ITEM_TEXTS.EIGHT },
-        { text: CALCULATION_ITEM_TEXTS.NINE },
+        { text: CALCULATION_ITEM_TEXTS.SEVEN, keyboardKey: "7" },
+        { text: CALCULATION_ITEM_TEXTS.EIGHT, keyboardKey: "8" },
+        { text: CALCULATION_ITEM_TEXTS.NINE, keyboardKey: "9" },
       ].map((calculationItem) => ({
         ...calculationItem,
         type: CALCULATION_ITEM_TYPES.NUMBER,
@@ -516,13 +528,14 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         text: CALCULATION_ITEM_TEXTS.DIVISION,
         type: CALCULATION_ITEM_TYPES.DIVISION,
         className: outButtonStyle,
+        keyboardKey: "/",
       },
     ],
     [
       ...[
-        { text: CALCULATION_ITEM_TEXTS.FOUR },
-        { text: CALCULATION_ITEM_TEXTS.FIVE },
-        { text: CALCULATION_ITEM_TEXTS.SIX },
+        { text: CALCULATION_ITEM_TEXTS.FOUR, keyboardKey: "4" },
+        { text: CALCULATION_ITEM_TEXTS.FIVE, keyboardKey: "5" },
+        { text: CALCULATION_ITEM_TEXTS.SIX, keyboardKey: "6" },
       ].map((calculationItem) => ({
         ...calculationItem,
         type: CALCULATION_ITEM_TYPES.NUMBER,
@@ -533,18 +546,22 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         text: CALCULATION_ITEM_TEXTS.MULTIPLICATION,
         type: CALCULATION_ITEM_TYPES.MULTIPLICATION,
         className: outButtonStyle,
+        keyboardKey: "*",
       },
     ],
     [
       ...[
         {
           text: CALCULATION_ITEM_TEXTS.ONE,
+          keyboardKey: "1",
         },
         {
           text: CALCULATION_ITEM_TEXTS.TWO,
+          keyboardKey: "2",
         },
         {
           text: CALCULATION_ITEM_TEXTS.THREE,
+          keyboardKey: "3",
         },
       ].map((calculationItem) => ({
         ...calculationItem,
@@ -556,12 +573,13 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         text: CALCULATION_ITEM_TEXTS.REMOVE,
         type: CALCULATION_ITEM_TYPES.REMOVE,
         className: outButtonStyle,
+        keyboardKey: "-",
       },
     ],
     [
       ...[
-        { text: CALCULATION_ITEM_TEXTS.ZERO },
-        { text: CALCULATION_ITEM_TEXTS.POINT }, // TODO: point için custom action ekleme
+        { text: CALCULATION_ITEM_TEXTS.ZERO, keyboardKey: "0" },
+        { text: CALCULATION_ITEM_TEXTS.POINT, keyboardKey: "." },
       ].map((calculationItem) => ({
         ...calculationItem,
         customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.NUMBER,
@@ -573,15 +591,18 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
         type: CALCULATION_ITEM_TYPES.CALCULATE,
         customActionType: CALCULATION_ITEM_CUSTOM_ACTIONS.CALCULATE,
         className: calculateButtonStyle,
+        keyboardKey: "Enter",
       },
       {
         text: CALCULATION_ITEM_TEXTS.ADDITION,
         type: CALCULATION_ITEM_TYPES.ADDITION,
         className: outButtonStyle,
+        keyboardKey: "+",
       },
     ],
   ];
 
+  // TODO: calculation item memoization? For ref
   const renderCalculationItem = (rowIndex) => (item, itemKey) => {
     const { className } = item;
     const isLastItemOnRow = itemKey === MAX_ROW_ITEMS_LENGTH;
@@ -600,6 +621,30 @@ const withCalculationContainerLogic = (ContainerComponent) => (props) => {
       />
     );
   };
+
+  useEffect(() => {
+    if (!isFocusedOnIndicator) return;
+
+    const reducedAllCalculationItems = allCalculationItems.reduce(
+      (acc, calculationItemsRow) => [...acc, ...calculationItemsRow],
+      []
+    );
+
+    const handleKeyDown = (e) => {
+      const calculationItem = reducedAllCalculationItems.find(
+        (item) => item.keyboardKey === e.key
+      );
+      if (!calculationItem) return;
+
+      handleActionButtonClick(calculationItem);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [allCalculationItems, isFocusedOnIndicator]);
 
   return (
     <ContainerComponent

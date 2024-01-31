@@ -5,6 +5,7 @@ const useCalculation = create((set) => ({
   calculationItems: [],
   pastCalculations: [],
   hasError: false,
+  isFocusedOnIndicator: false,
   setCalculationItems: (calculationItems = []) =>
     set(() => ({ calculationItems })),
   addPastCalculation: (pastCalculation, calculatedItem) =>
@@ -25,6 +26,8 @@ const useCalculation = create((set) => ({
     }));
   },
   setHasError: (payload) => set(() => ({ hasError: payload })),
+  setIsFocusedOnIndicator: (payload) =>
+    set(() => ({ isFocusedOnIndicator: payload })),
 }));
 
 export default useCalculation;
